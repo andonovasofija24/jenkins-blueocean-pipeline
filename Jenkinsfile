@@ -1,16 +1,34 @@
-node {
-    def app
-    stage('Clone repository') {
-        checkout scm
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'andonovasofija24/jenkins-blueocean-pipeline'
     }
-    stage('Build image') {
-       app = docker.build("andonovasofija24/jenkins-blueocean-pipeline")
-    }
-    stage('Push image') {   
-        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-creds') {
-            app.push("${env.BRANCH_NAME}-${env.BUILD_NUMBER}")
-            app.push("${env.BRANCH_NAME}-latest")
-            // signal the orchestrator that there is a new version
+
+    stages {
+        stage('Clone repository') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE_NAME}")
+                }
+            }
+        }
+
+        stage('Push image') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-creds') {
+                        dockerImage.push("${env.BRANCH_NAME}-${env.BUILD_NUMBER}")
+                        dockerImage.push("${env.BRANCH_NAME}-latest")
+                    }
+                }
+            }
         }
     }
 }
